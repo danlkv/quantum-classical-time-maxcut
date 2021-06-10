@@ -1,0 +1,3 @@
+xarray
+qtensor
+cartesian-explorer
