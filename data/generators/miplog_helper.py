@@ -36,6 +36,20 @@ class MiplogData:
     # The following functions use upper and lower bounds on max_sol
     # to give time to reach lower and upper bounds on AR respectively
 
+    def get_bounds_at(self, ts):
+        times, bounds, costs = self.get_history_data()
+        ix = np.where((ts - times)>=0)[0]
+        if len(ix) == 0:
+            return None, None
+        ix = max(ix)
+        return bounds[ix], costs[ix]
+
+    def get_history_data(self):
+        """
+        Returns: times, bounds, costs
+        """
+        return np.array(self.miplog)[1:].T
+
     def get_time_for_AR_lower(self, AR):
         """ 
         Args:
@@ -43,27 +57,28 @@ class MiplogData:
         Returns:
             time, AR
         """
-        times, bounds, costs = np.array(self.miplog)[1:].T
+        times, bounds, costs = self.get_history_data()
         AR_bound = costs/bounds
         # get the index at which AR bound is higher than requested
-        ix = np.where((AR_bound-AR)>0)[0]
+        ix = np.where((AR_bound-AR)>=0)[0]
         if len(ix)==0: return None, None
         else: ix = min(ix)
         return times[ix], AR_bound[ix]
 
     def get_time_for_AR_upper(self, AR):
-        """ 
+        """
+        Returns time during at least which upper bound is lower than ``AR``
         Args:
             AR (float): which AR bound to look for
         Returns:
             time, AR
         """
-        times, bounds, costs = np.array(self.miplog)[1:].T
+        times, bounds, costs = self.get_history_data()
         AR_bound = costs/costs[-1]
         # get the index at which AR bound is higher than requested
-        ix = np.where((AR_bound-AR)>=0)[0]
+        ix = np.where((AR_bound-AR)<=0)[0]
         if len(ix)==0: return None, None
-        else: ix = min(ix)
+        else: ix = max(ix)
         return times[ix], AR_bound[ix]
     
     # --
