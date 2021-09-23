@@ -1,3 +1,4 @@
 xarray
 qtensor
 cartesian-explorer
+pandas
