@@ -26,4 +26,8 @@ See instructions on the official site, the general steps are the following:
 
 1. Register at the website [gurobi.com](https://www.gurobi.com)
 2. Unpack an archive 
-3. Run licensing code (included in data/generators/*)
+3. Run licensing code (included in `data/generators/*`)
+
+
+---
+Note: if you don't see figures in notebooks, select "File -> Trust Notebook"
