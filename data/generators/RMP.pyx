@@ -17,7 +17,7 @@ import tqdm
 import pandas as pd
 
 # Define the geometry of the graph
-Ns = [10**2, 5*10**2, 10**3, 5*10**3, 10**4, 5*10**4, 10**5]
+Ns = [10**2, 5*10**2, 10**3]#, 5*10**3, 10**4, 5*10**4, 10**5]
 connectivity = 3
 
 # Number of samples to try
@@ -32,11 +32,11 @@ for index, N in enumerate(Ns):
 	for sampind in range(nsamples):              # Try a bunch of graphs as to get statistics
 		G = nx.random_regular_graph(connectivity,N)
 		
+		t1 = time.time()
 		edges = array(list(G.edges))                        # Some convenient vectorized representations of the graph
 		adj = array([[r] + list(q.keys()) for r,q in dict(G.adjacency()).items()])
 		sorted_adjacency = adj[argsort(adj[:,0]),1::]
 		
-		t1 = time.time()
 		SOLUTION = random.choice([-1,1],size=N)             # First, choose a random solution
 		go_again = random.permutation(arange(N))
 		
@@ -64,5 +64,5 @@ for index, N in enumerate(Ns):
 compiled_array = array(compiled_list).T
 frame = pd.DataFrame(compiled_array)
 
-frame.to_csv("../message_passing_data.csv",index=None,header=header)
+frame.to_csv("../message_passing_data2.csv",index=None,header=header)
 
