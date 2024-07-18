@@ -1,0 +1,368 @@
+\section{Methods}\label{sec:methodology}
+
+Both classical solvers and QAOA return a bitstring as a solution to the MaxCut problem. To compare the algorithms,
+we must decide on a metric to use to measure the quality of the solution. A common metric for QAOA and many classical algorithms is the approximation ratio, which is defined as the ratio of cut value (as defined in Eq.~(\ref{eq:maxcut_cost})) of the solution divided by the optimal (i.e., maximum possible) cut value for the given graph.
+This metric is hard to evaluate heuristically for large $N$, since we do not know the optimal solution. We therefore use the cut fraction as the metric for solution quality, which is the cut value divided by the number of edges.
+
+We analyze the algorithms on an ensemble of problem instances. Some instances may give advantage, while others may not. We 
+therefore analyze \emph{ensemble advantage},
+which compares the average solution quality over the ensemble.
+The set of 3-regular graphs is extremely large for large graph size $N$, so for classical heuristic algorithms we evaluate the performance on a subset of graphs.
+We then look at the mean of the cut fraction over the ensemble, which is the statistical approximation of the mean of the cut fraction over all 3-regular graphs.
+
+\subsection{QAOA Methodology}
+
+
+Usually  QAOA is thought of as a hybrid algorithm, where a quantum-classical outer loop optimizes the angles $\gamma,\beta$ through repeated query to the quantum device by a classical optimizer. Depending on the noise, this process may require hundreds or thousands of queries in order to find optimal angles, which slows the computation. To our knowledge,  no comprehensive work exists on exactly how many queries may be required to find such angles. It has been numerically observed \cite{Shaydulin_2019,Zhou2020}, however, that for small graph size $N=12$ and $p=4$, classical noise-free optimizers may find good angles in approximately $100$ steps, which can be larger for higher $N$ and $p$. Each step may need order $10^3$  bitstring queries to average out shot noise and find expectation values for an optimizer, and thus seeking global angles may require approximately $100\,000$ queries to the simulator.
+The angles are then used for preparing an ansatz state, which is in turn measured (potentially multiple times) to obtain a solution.
+Assuming a sampling rate of 1 kHz, this approach implies a QAOA solution of approximately  $100$ seconds.
+
+
+ Recent results, however, suggest that angles may be precomputed on a classical device \cite{streif2019training} or transferred from other similar graphs \cite{galda2021transferability}.
+ Further research analytically finds optimal angles for~$p\leq20$~and $d\to\infty$ 
+ for all large-girth $d$-regular graphs, but does not give angles for finite~$d$~\cite{Basso2022}.
+ Going a step further, a recent work finds that evaluating regular graphs at particular fixed angles has good performance on all problem instances \cite{Wurtz_guarantee}. These precomputed or fixed angles allow the outer loop to be bypassed, finding close to optimal results in a single shot. In this way, a $1000$ Hz QAOA solution can be found in  milliseconds, a speedup of several ordesr of magnitude. 
+
+
+For this reason we study the prospect for quantum advantage in the context of fixed-angle QAOA. For $d$-regular graphs, there exist particular fixed angles with universally good performance \cite{wurtz2021fixed}. 
+Additionally, as will be shown in Section \ref{sec:single-shot}, one can reasonably expect that sampling a single bitstring from the fixed-angle QAOA will yield a solution with a cut fraction close to the expectation value.
+
+The crucial property of the fixed-angle single-shot approach is that it is guaranteed to work for any graph size $N$.
+On the other hand, angle optimisation could be less productive for large $N$, and the multiple-shot (measuring the QAOA ansatz multiple times) approach \textit{is} less productive for large $N$, as shown in Section \ref{sec:multi-shot}.
+Moreover, the quality of the solution scales with depth as $\sqrt p$ \cite{wurtz2021fixed}, which is faster than with the number of samples $\sqrt{\log K}$, instructing us to resort to multishot QAOA only if larger $p$ is unreachable.
+Thus, the fixed-angle single-shot QAOA can robustly speed up finding a good approximate solution from the order of seconds to milliseconds, a necessity for advantage over state-of-the-art anytime heuristic classical solvers, which can get good or exact solutions in approximately milliseconds. Crucially, single-shot QAOA quality of solution can be maintained for all sizes $N$ at fixed depth $p$, which can mean constant time scaling, for particularly capable quantum devices.
+
+
+
+To simulate the expectation value of the cost function for 
+QAOA, we employ a classical quantum circuit simulation algorithm QTensor \cite{lykov2021large, lykov_diagonal, LykovGPU}.
+This algorithm is based on tensor network contraction and is described in more detail in Appendix \ref{sec:qtensor}.
+Using this approach, one can simulate expectation values on a classical computer even for circuits with millions of qubits. 
+
+
+
+\subsection{Classical Solvers}
+\label{sec:meth_classical}
+
+
+Two main types of classical MaxCut algorithms exist: approximate algorithms and heuristic solvers.
+Approximate algorithms guarantee a certain quality of solution for any problem instance. Such algorithms~\cite{Halperin_MaxCut,gw-algo} 
+also provide polynomial-time scaling.
+Heuristic solvers~\cite{gurobi, MQLib} are usually based on branch-and-bound methods~\cite{gurobi_mip} that use branch pruning and heuristic rules for  variable and value ordering. These heuristics are usually 
+designed to run well on graphs that are common in practical use cases.
+Heuristic solvers typically return better solutions than do approximate solvers,
+but they provide no guarantee on the quality of the solution.
+
+The comparison of QAOA with classical solvers thus requires making choices of measures that depend on the context of comparison. From a theory point of view, guaranteed performance is more important; in contrast, from an applied point of view, heuristic performance is the measure of choice.
+A previous work \cite{Wurtz_guarantee} demonstrates that
+QAOA provides better performance guarantees than does the Goemans--Williamson algorithm \cite{gw-algo}.
+In this paper we  compare against heuristic algorithms since such a comparison is more 
+relevant for real-world problems.
+On the other hand, the performance of classical solvers reported in this paper
+can depend on a particular problem instance.
+
+We evaluate two classical algorithms using a single node of Argonne's Skylake testbed; the processor used is an Intel Xeon Platinum 8180M CPU @ 2.50 GHz with 768 GB of RAM.
+
+The first algorithm we study is the Gurobi solver \cite{gurobi}, which is a combination of many heuristic algorithms.
+We evaluate Gurobi with an improved configuration based on communication with 
+Gurobi support~\footnote{\url{https://support.gurobi.com/hc/en-us/community/posts/4403570181137-Worse-performance-for-smaller-problem}}.
+We use \texttt{Symmetry=0} and \texttt{PreQLinearize=2} in our improved configuration.
+As further tweaks and hardware resources may increase the speed, the results here serve as a characteristic lower bound on Gurobi performance rather than a true guarantee. 
+We run Gurobi on 100 random-regular graphs for each size $N$ and allow each optimization to run for 30 minutes.
+During the algorithm runtime we collect information about the process, in particular the quality of the best-known solution.
+In this way we obtain a ``performance profile" 
+of the algorithm that shows the relation between the solution quality and the running time. An example of such a performance profile for $N=256$ is shown in Fig. \ref{fig:timebounds}.
+Gurobi was configured to use only a single CPU, to avoid interference in runtime between different Gurobi optimization runs for different problem instances. In order to speed up collection of the statistics, 
+55 problem instances were executed in parallel.
+
+The second algorithm is MQLib \cite{MQLib},
+which is implemented in C++ and uses a variety of different heuristics
+for solving MaxCut and QUBO problems.
+We chose the BURER2002 heuristic since in our experiments it 
+performs the best for MaxCut on random regular graphs.
+Despite using a single thread, this algorithm is much faster than Gurobi; thus we run it for 1 second.
+In the same way as with Gurobi, we collect the
+``performance profile" of this algorithm.
+
+While QAOA and Gurobi can be used as general-purpose combinatorial optimization algorithms, this algorithm is designed to
+solve MaxCut problems only, and the heuristic was picked 
+that demonstrated the best performance on the graphs we considered.
+In this way we use Gurobi as a ``worst-case" classical solver,
+which is capable of solving the same problems as QAOA can.
+Moreover, Gurobi is a well-established commercial tool that is widely used in industry. 
+Note, however, that we use QAOA fixed angles that are optimized specifically for 3-regular graphs, and one can argue
+that our fixed-angle QAOA is an algorithm designed for 3-regular MaxCut.
+For this reason we also consider the ``best-case" MQLib+BURER2002 classical algorithm, which is designed for MaxCut, and we choose the heuristic that performs best on 3-regular graphs.
+
+
+\subsection{QAOA performance}\label{sec:QAOAperformance}
+
+Two aspects are involved in  comparing the performance of algorithms, as outlined in Fig.~\ref{fig:comparison_map}: time to solution and quality of solution. In this section we evaluate the performance of single-shot fixed-angle QAOA. As discussed in the introduction, the time to solution is a crucial part and for QAOA is dependent on the initialization time and the number of rounds of sampling. Single-shot fixed-angle QAOA involves  only a single round of sampling, and so the time to solution can be extremely fast, with initialization time potentially becoming the limiting factor.
+This initialization time is bound by the speed of classical computers, which perform calibration and device control. Naturally, if one is able to achieve greater initialization speed by using better classical computers, the same computers can be used to improve the speed of solving MaxCut classically. Therefore, it is also important to consider the time scaling of both quantum initialization and classical runtime.
+
+The quality of the QAOA solution is the other part of performance. The discussion below evaluates this feature by using subgraph decompositions and QAOA typicality, including a justification of single0shot sampling.
+
+
+\subsubsection{QAOA Introduction}
+\label{sec:QAOA_intro}
+
+ QAOA is a variational ansatz algorithm structured to provide solutions to combinatorial optimization problems. The ansatz is constructed as $p$ repeated applications of an objective $\hat C$ and mixing $\hat B$ unitary:
+\begin{equation}\label{eq:QAOA_ansatz}
+|\gamma,\beta\rangle = e^{-i\beta_p \hat B}e^{-i\gamma_p \hat C}(\cdots)e^{-i\beta_1 \hat B}e^{-i\gamma_1 \hat C}|+\rangle ,
+\end{equation}
+%%
+where $\hat B$ is a sum over Pauli $X$ operators $\hat B = \sum_i^N\hat \sigma_x^i$. A common problem instance is MaxCut, which strives to bipartition the vertices of some graph $\mathcal G$ such that the maximum number of edges have vertices in opposite sets. Each such edge is considered to be ``cut" by the bipartition. This may be captured in the objective function
+
+\begin{equation}
+\hat C = \frac{1}{2}\sum_{\langle ij\rangle \in \mathcal G}(1 - {\hat \sigma}_z^i {\hat \sigma}_z^j),
+\label{eq:maxcut_cost}
+\end{equation}
+%%
+\newcommand{\gb}{{\vec{\gamma}, \vec{\beta}}}
+\newcommand{\Z}{{\hat\sigma_z}}
+%%
+whose eigenstates are bipartitions in the $Z$ basis, with eigenvalues that count the number of cut edges.
+To get the solution to the optimization problem, one prepares the ansatz state $\ket \gb$ on a quantum device and then measures the state. The measured bitstring is the solution output from the algorithm.
+
+While  QAOA is guaranteed to converge to the exact solution in the $p\to\infty$ limit in accordance with the adiabatic theorem \cite{farhi2014quantum,wurtz2021counterdiabaticity}, today's hardware is limited to low depths $p\sim 1$ to $5$, because of the noise and decoherence effects inherent to the NISQ era. 
+
+
+\subsubsection{Subgraph Decomposition}
+
+%% Decomposition into subgraphs.
+
+A useful tool for analyzing the performance of QAOA is  the fact that QAOA is local \cite{farhi2014quantum,farhi2020quantum}: the entanglement between any two qubits at a distance of $\geq2p$ steps from each other is strictly zero. For a similar reason, the expectation value of a particular edge $\langle ij\rangle$
+
+\begin{equation}\label{eq:edge_expectation}
+    f_{\langle ij\rangle} = \frac{1}{2}\langle \gb|1 - \hat \sigma_z^i\hat\sigma_z^j|\gb \rangle
+\end{equation}
+%%
+depends only on the structure of the graph within $p$ steps of edge $\langle ij\rangle$. Regular graphs have a finite number of such local structures (also known as subgraphs) \cite{Wurtz_guarantee}, and so the expectation value of the objective function can be rewritten as a sum over subgraphs
+
+\begin{equation}
+    \langle \hat C\rangle = \sum_{\text{subgraphs } \lambda}M_\lambda(\mathcal G) f_\lambda.
+\end{equation}
+
+Here, $\lambda$ indexes the different possible subgraphs of depth $p$ for a $d$ regular graph, $M_\lambda(\mathcal G)$ counts the number of each subgraph $\lambda$ for a particular graph $\mathcal G$, and $f_\lambda$ is the expectation value of the subgraph (e.g.,~Eq.~\eqref{eq:edge_expectation}). For example, if there are no cycles $\leq 2p+1$,  only one subgraph (the ``tree" subgraph)  contributes to the sum.
+
+With this tool we may ask and answer the following question: What is the typical performance of single-shot fixed-angle QAOA, evaluated over some ensemble of graphs? Here, performance is characterized as the typical (average) fraction of edges cut by a bitstring solution returned by a single sample of fixed-angle QAOA, averaged over all graphs in the particular ensemble. 
+
+For our study we choose the ensemble of $3$-regular graphs on $N$ vertices. Different ensembles, characterized by different connectivity $d$ and size $N$, may have different QAOA performance \cite{herrman2021impact, shaydulin2021qaoakit}.
+
+Using the structure of the random regular graphs, we can put bounds on the cut fraction by bounding the number of different subgraphs and evaluating the number of large cycles. 
+These bounds become  tighter for $N\longrightarrow\infty$ and fixed $p$ since the majority of subgraphs become trees and 1-cycle graphs.
+We describe this analysis in detail in Appendix \ref{sec:graph_stat_bounds}, which shows that the QAOA cut fraction will equal the expectation value on the ``tree" subgraph, which may be used as a ``with high probability" (WHP) proxy of performance. Furthermore, using a subgraph counting argument, we may count the number of tree subgraphs to find an upper and lower WHP bound on the cut fraction for smaller graphs. These bounds are shown as the boundaries of the red and green regions in Fig.~\ref{fig:bounds_p1}.
+
+
+
+
+
+
+
+
+\subsubsection{Ensemble Estimates}\label{sec:ensemble_estimates}
+
+A more straightforward but less rigorous characterization of QAOA performance is simply to evaluate fixed-angle QAOA on a subsample of graphs in the ensemble. The results of such an analysis require an assumption not on the particular combinatorial graph structure of ensembles but instead on the typicality of expectation values on subgraphs. This is an assumption on the structure of QAOA and allows an extension of typical cut fractions from the large $N$ limit where most subgraphs are trees to a small $N$ limit where typically a very small fraction of subgraphs are trees.
+
+Figure \ref{fig:bounds_p1} plots the ensemble-averaged cut fraction for $p=2$ and various sizes of graphs. For $N\leq 16$, the ensemble includes every 3-regular graph (4,681 in total). For each size of $N>16$, we evaluate fixed-angle QAOA on 1,000 3-regular graphs drawn at random from the ensemble of all 3-regular graphs for each size $N\in (16,256]$. Note that because the evaluation is done at fixed angles, it may be done with minimal quantum calculation by a decomposition into subgraphs, then looking up the subgraph expectation value $f_\lambda$ from~\cite{Wurtz_guarantee}. This approach is also described in more detail in~\cite{shaydulin2021}. In this way, expectation values can be computed as fast as an isomorphism check.
+
+From Fig.~\ref{fig:bounds_p1} we observe that the median cut fraction across the ensemble appears to concentrate around that of the tree subgraph value, even for ensembles where the typical graph is too small to include many tree subgraphs. Additionally, the variance (dark fill) reduces as $N$ increases, consistent with the fact that for larger $N$ there are fewer kinds of subgraphs with non-negligible frequency. Furthermore, the absolute range (light fill), which plots the largest and smallest expectation value across the ensemble, is consistently small. While the data for the absolute range  exists  here only for $N\leq 16$ because of complete sampling of the ensemble, 0ne can reasonably  expect that these absolute ranges extend for all $N$, suggesting that the absolute best performance of $p=2$ QAOA on 3-regular graphs is around $\approx 0.8$.
+
+We numerically observe across a range of $p$ (not shown) that these behaviors persist: the typical cut fraction is approximately equal to that of the tree subgraph value $f_\text{p-tree}$ even in the limit where no subgraph is a tree. This suggests that the typical subgraph expectation value $f_\lambda\approx f_\text{p-tree}$, and only an atypical number of subgraphs have expectation values that diverge from the tree value. With this observation, we may use the value $f_\text{p-tree}$ as a proxy for the average cut fraction of fixed-angle QAOA.
+
+\quad
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/figure2.pdf}
+    \caption{$p=2$ QAOA cut fraction guarantees under different assumptions. Dashed and solid lines plot with high probability the lower and upper bounds on cut fractions, respectively, assuming only graph theoretic typicality on the number of subgraphs. Dotted plots are the ensemble median over an ensemble of 3-regular graphs; for $N\leq 16$ (dots); this includes all graphs, while for $N>16$ this is an ensemble of 1,000 graphs for each size. We used 32 sizes between 16 and 256. Dark black fill plots the variance in the cut fraction over the ensemble, and light black fill plots the extremal values over the ensemble. The median serves as a proxy of performance assuming QAOA typicality. Given a particular cut from a classical solver, there may be different regions of advantage, shown by the four colors and discussed in the text.}
+    \label{fig:bounds_p1}
+\end{figure}
+
+
+These analyses yield four different regimes for advantage vs.~classical algorithms, shown in Fig.~\ref{fig:bounds_p1}. If a classical algorithm yields small cut fractions for large graphs (green, bottom right), then there is advantage in a strong sense. Based only on graph combinatorics, with high probability most of the edges participate in few cycles, and thus the cut fraction is almost guaranteed to be around the tree value, larger than the classical solver. Conversely, if the classical algorithm yields large cut fractions for large graphs (red, top right), there is no advantage in the strong sense: QAOA will  yield, for example, only $\sim 0.756$ for $p=2$ because most edges see no global structure. This analysis emphasizes that of \cite{farhi2020quantum}, which suggests that QAOA needs to ``see" the whole graph in order to get reasonable performance.
+
+Two additional performance regimes for small graphs exist, where QAOA can reasonably ``see" the whole graph. If a classical algorithm yields small cut fractions for small graphs (yellow, bottom left), then there is advantage in a weak sense, which we call the ``ensemble advantage." Based on QAOA concentration, there is at least a $50\%$ chance that the QAOA result on a particular graph will yield a better cut fraction than will the classical algorithm; assuming that the variance in cut fraction is small, this is a ``with high probability'' statement. Conversely, if the classical algorithm yields large cut fractions for small graphs (orange, top left), there is no advantage in a weak sense. Assuming QAOA concentration, the cut fraction will be smaller than the classical value, and for some classical cut fraction there are no graphs with advantage (e.g., $>0.8$ for $p=2$).
+
+Based on these numerical results, we may use the expectation value of the tree subgraph $f_\text{p-tree}$ as a high-probability proxy for typical fixed-angle QAOA performance on regular graphs. For large $N$, this result is validated by graph-theoretic bounds counting the typical number of tree subgraphs in a typical graph. For small $N$, this result is validated by fixed-angle QAOA evaluation on a large ensemble of graphs.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/figure3}
+    \caption{Long-range antiferromagnetic correlation coefficient on the 3-regular Bethe lattice, which is a proxy for an $N\to\infty$ typical 3-regular graph. Horizontal indexes the distance between two vertices.  QAOA is strictly local, which implies that  no correlations exist between vertices a distance $>2p$ away. As shown here, however, these correlations are exponentially decaying with distance. This suggests that even if the QAOA ``sees the whole graph," one can use the central limit theorem to argue that the distribution of QAOA performance is  Gaussian with the standard deviation of $\propto 1/\sqrt N$}
+    \label{fig:longrange_correlations}
+\end{figure}
+
+\subsubsection{Single-shot Sampling}
+\label{sec:single-shot}
+
+A crucial element of single-shot fixed-angle QAOA is  that the typical bitstring measured from the QAOA ansatz has a cut value similar to the average. This fact was originally observed by Farhi et al.~in the original QAOA proposal \cite{farhi2014quantum}: because of the strict locality of QAOA, vertices a distance more than $>2p$ steps from each other have a $ZZ$ correlation of strictly zero. Thus, for large graphs with a width $>2p$, by the central limit theorem the cut fraction concentrates to a Gaussian with a standard deviation of order $\frac{1}{\sqrt{N}}$ around the mean. As the variance grows sublinearly in $N$, the values concentrate at the mean, and thus with high probability measuring a single sample of QAOA will yield a solution with a cut value close to the average.
+
+However, this result is limited in scope for larger depths $p$, because it imposes no requirements on the strength of correlations for vertices within distance $\leq2p$. Therefore, here we strengthen the argument of Farhi et al.~and show that these concentration results may persist even in the limit of large depth $p$ and small graphs $N$. We formalize these results by evaluating the $ZZ$ correlations of vertices within $2p$ steps, as shown in Fig.~\ref{fig:longrange_correlations}. Expectation values are computed on the 3-regular Bethe lattice, which has no cycles and thus can be considered the $N\to\infty$ typical limit. Instead of computing the nearest-neighbor correlation function, the x-axis computes the correlation function between vertices a certain distance apart. For distance 1, the correlations are that of the objective function $f_\text{p-tree}$. Additionally, for  distance $>2p$, the correlations are strictly zero in accordance with the strict locality of QAOA. For distance $\leq 2p$, the correlations are exponentially decaying with distance. Consequently, even for vertices within the lightcone of QAOA, the correlation is small; and so by the central limit theorem the distribution will be Gaussian.
+This result holds because the probability of having a cycle of fixed size converges to 0 as $N\to \infty$. 
+In other words, we know that with $N\to\infty$ we will have a Gaussian cost distribution with variance $\propto\frac{1}{\sqrt N}$.
+
+When considering ``small" $N$ graphs, ones that have cycles of length $\leq 2p+1$, we can reasonably  extend the argument of Section~\ref{sec:ensemble_estimates} on typicality of subgraph expectation values. Under this typicality argument, the correlations between close vertices is still exponentially decaying with distance, even though the subgraph may not be a tree and there are multiple short paths between vertices. Thus, for all graphs, by the central limit theorem the distribution of solutions concentrates as a Gaussian with a standard deviation of order $\frac{1}{\sqrt{N}}$ around the mean. By extension, with probability $\sim 50\%$, any single measurement will yield a bitstring with a cut value greater than the average. These results of cut distributions have been found heuristically in \cite{larkin2020evaluation}.
+
+\quad
+
+The results are a full characterization of the fixed-angle single-shot QAOA on 3-regular graphs. Given a typical graph sampled from the ensemble of all regular graphs, the typical cut fraction from level $p$ QAOA will be about that of the expectation value of the $p$-tree $f_{\text{p-tree}}$. The distribution of bitstrings is concentrated as a Gaussian of subextensive variance around the mean, indicating that one can find a solution with quality greater than the mean with order 1 samples. Furthermore, because the fixed angles bypass the hybrid optimization loop, the number of queries to the quantum simulator is reduced by orders of magnitude, yielding solutions on potentially  millisecond timescales.
+
+
+\subsubsection{Multiple shot Sampling}
+\label{sec:multi-shot}
+
+
+In the preceding section we demonstrated that the  standard deviation of MaxCut cost distribution falls as $1/\sqrt{N}$, which deems impractical the usage of multiple shots for large graphs. However, it is worth verifying more precisely  its effect  on the QAOA performance.
+The multiple-shot QAOA involves measuring the bitstring from the same ansatz state and then picking the bitstring with the best cost. 
+To evaluate such an approach, we need to find the expectation value for the best bitstring over $K$ measurements.
+
+As shown above, the distribution of cost for each measured bitstring is  Gaussian, $p(x) = G(\frac{x-\mu_p}{\sigma_N})$.
+We define a new random variable $\xi$ which is the cost of the best of $K$ bitstrings.
+The cumulative distribution function (CDF) of the best of $K$ bitstrings is $F_K(\xi)$, and $F_1(\xi)$ is the CDF of a normal distribution.
+The probability density for $\xi$ is
+
+\begin{equation}
+    p_K(\xi) = \frac{d}{d\xi} F_K(\xi) =\frac{d}{d\xi} F_1^K(\xi)
+    = K F_1^{K-1}(\xi) p(\xi),
+\end{equation}
+where  $F_1(\xi) = \int_{-\infty}^\xi p(x) d x$ and $F_1^K$ is the ordinary exponentiation.
+The expectation value for $\xi$ can be found by $E_K = \int_{-\infty}^\infty d x \, x p_K(x)$.
+While the analytical expression for the integral can be extensive,  a good upper bound exists for it: $E_K\leq \sigma\sqrt{2 \log K} + \mu$.
+
+Combined with the $1/\sqrt N$ scaling of the standard deviation, we can obtain a bound on
+improvement in cut fraction from sampling $K$ times:
+
+\begin{equation}
+\label{eq:multi-shot}
+    \Delta = \gamma_p\sqrt{\frac{2}{N} \log K},
+\end{equation}
+where $\gamma_p$ is a scaling parameter.
+The value $\Delta$ is the difference of solution quality for multishot and single-shot QAOA. Essentially it determines the utility of using multishot QAOA.
+We can determine the scaling constant $\gamma_p$ by classically simulating
+the distribution of the cost value in the ansatz state. 
+We perform these simulations using QTensor for an ensemble of graphs with $N\leq 26$ to obtain
+$\gamma_6 = 0.1926$ and $\gamma_{11} = 0.1284$.
+
+It is also worthwhile to verify the $1/\sqrt N$ scaling,
+by calculating $\gamma_p$ for various $N$. We can do so for smaller $p=3$ and graph sizes $N\leq256$.
+We calculate the standard deviation by $\Delta C= \sqrt{\langle C^2 \rangle - \langle C \rangle ^2}$ and evaluate the $\langle C^2 \rangle$ using QTensor. This evaluation gives large light cones for large $p$;  the largest that we were able to simulate is $p=3$.
+From the deviations $\Delta C$ we can obtain values for $\gamma_3$. We find that for all $N$ the values stay within 5\% of average over all $N$. This shows that they do not depend on $N$, which in turn signifies that the $1/\sqrt N$ scaling is a valid model. The results of numerical simulation of the standard deviation are discussed in more detail in Appendix~\ref{sec:sd_experiment}.
+
+
+To compare multishot QAOA with classical solvers, we plot the expected performance of multishot QAOA in Fig.~\ref{fig:timebounds} as dash-dotted lines. We assume that a quantum device is able to sample at the 5kHz rate. Today's hardware is able to run up to $p=5$ and achieve the 5 kHz sampling rate \cite{Harrigan2021}.
+Notably, the sampling frequency of modern quantum computers is bound not by gate duration, but by 
+qubit preparation and measurement.
+
+For small $N$, reasonable improvement can be achieved by using a few samples. For example, for $N=256$ with $p=6$ and just $K=200$ shots, QAOA can perform as well as single-shot $p=11$ QAOA. For large $N$, however, too many samples are required to obtain substantial improvement for multishot QAOA to be practical.
+
+
+
+\subsection{Classical performance}\label{sec:classicalperformance}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/figure4.pdf}
+    \caption{
+    Evolution of cut fraction value in the process of running the classical algorithms solving 3-regular MaxCut with $N$=256. The shaded area shows 90-10 percentiles interval, 
+    and the solid line shows the mean cut fraction over 100 graphs.
+    The dashed lines show the expectation value of single-shot QAOA for $p=6, 11$, and
+    the dash-dotted lines show the expected performance for multishot QAOA given a sampling rate of 5 kHz.
+    Note that for this $N=256$ the multi-shot QAOA with $p=6$ can compete with Gurobi
+    at 50 milliseconds. However, the slope of the multi-shot line will decrease for larger $N$, reducing the utility of the multi-shot QAOA. 
+    }
+    \label{fig:timebounds}
+\end{figure}
+
+
+To compare the QAOA algorithm with its classical counterparts, we choose the state-of-the art algorithms that solve the similar spectrum of problems as QAOA, and we  evaluate the time to solution and solution quality. Here, we compare  two algorithms: Gurobi and MQLib+BURER2002. 
+Both are anytime heuristic algorithms that can provide an approximate solution at arbitrary time. For these algorithms we 
+collect the ``performance profiles"---the dependence of solution quality on time spent  finding the solution.
+We also evaluate performance of a simple MaxCut algorithm FLIP. This algorithm has a proven linear time scaling with input size. It returns a single solution after a short time. To obtain a better FLIP solution, one may run the algorithm several times and take the best solution, similarly to the multishot QAOA.
+
+Both algorithms have to read the input and perform some initialization step to output any solution. This initialization step determines the minimum time required for getting the initial 
+solution---a ``first guess" of the algorithm. This time is the leftmost point of the performance profile marked with a star in Fig.~\ref{fig:timebounds}. 
+We call this time $t_0$ and the corresponding solution quality \emph{zero-time performance}.
+
+We observe two important results.
+\begin{enumerate}
+    \item Zero-time performance is constant with $N$ and is comparable to that of $p=11$ QAOA,
+    as shown in Fig.~\ref{fig:t0_cutf}, where solid lines show classical performance and dashed lines show QAOA performance.
+    \item $t_0$ scales as a low-degree polynomial in $N$, as shown in Fig.~\ref{fig:adv_freq}. The y-axis is $t_0$ for several classical algorithms.
+\end{enumerate}
+
+Since the zero-time performance is slightly above the expected QAOA performance at $p=11$, we focus on analyzing this ``zero-time regime."
+In the following subsections we discuss the performance of the classical algorithms and then proceed to the comparison with QAOA.
+
+\subsubsection{Gurobi Solver}
+
+
+\begin{figure}
+    \includegraphics[width=\linewidth]{figures/figure5}
+    \caption{
+    Zero-time performance for graphs of different size $N$.
+    The Y-value is the cut fraction obtained by running corresponding algorithms for minimum possible time. This corresponds to the Y-value of the star marker in Fig.~\ref{fig:timebounds}.
+    Dashed lines show the expected QAOA performance for $p=11$ (blue) and $p=6$ (yellow). QAOA can outperform the FLIP algorithm at depth $p>6$, while for Gurobi it needs $p>11$.
+    Note that in order to claim advantage, QAOA has to provide the zero-time solutions in faster time than FLIP or Gurobi does. These times are shown on Fig.~\ref{fig:adv_freq}.
+    %Fix line formatting. \jw{Expand.}
+    }
+    \label{fig:t0_cutf}
+\end{figure}
+
+
+In our classical experiments, as mentioned in Section~\ref{sec:meth_classical},
+we collect the solution quality with respect to time for multiple $N$ and graph instances.
+An example averaged solution quality evolution is shown in Fig.~\ref{fig:timebounds} for an ensemble of 256 vertex 3-regular graphs. Between times 0 and $t_{0, G}$, the Gurobi algorithm goes through some initialization and quickly finds some naive approximate solution. Next, the first incumbent solution is generated, which will be improved in further runtime. Notably, for the first 50 milliseconds, no significant improvement to solution quality is found. After that, the solution quality starts to rise and slowly converge to the optimal value of~$\sim 0.92$.
+
+
+
+It is important to appreciate that Gurobi is more than just a heuristic solver: in addition to the incumbent solution, it always returns an upper bound on the optimal cost. 
+When the upper bound and the cost for the incumbent solution match, the optimal solution is found.
+It is likely that Gurobi spends a large portion of its runtime on proving the optimality by lowering the upper bound. This emphasizes that we use Gurobi as a worst-case classical solver.
+
+
+Notably, the x-axis of Fig.~\ref{fig:timebounds} is logarithmic: the lower and upper bounds eventually converge after exponential time with a small prefactor, ending the program and yielding the exact solution. Additionally, the typical upper and lower bounds of the cut fraction of the best solution are close to 1. Even after approximately 10 seconds for a 256-vertex graph, the algorithm returns cut fractions with very high quality $\sim 0.92$, far better than intermediate-depth QAOA.
+
+The zero-time performance of Gurobi for $N = 256$ corresponds to the Y-value of the star marker on Fig.~\ref{fig:timebounds}. We plot this value for various $N$ in Fig.~\ref{fig:t0_cutf}. As shown in the figure, zero-time performance goes up and reaches a constant value of $\sim 0.882$ at $N \sim 100$. Even for large graphs of $N = 10^5$, the solution quality stays at the same level.
+
+Such solution quality is returned after time $t_{0,G}$, which we plot in Fig.~\ref{fig:adv_freq} for various $N$. For example, for a 1000-node graph it will take $\sim 40$ milliseconds to return the first solution. Evidently, this time scales as a low-degree polynomial with $N$. This shows that Gurobi can consistently return solutions of quality $\sim 0.882$ in polynomial time.
+
+
+\subsubsection{MQLib+BURER2002 and FLIP Algorithms}
+
+The MQLib algorithm with the BURER2002 heuristic shows significantly better performance, which is expected since it is specific to MaxCut.
+As shown in Fig.~\ref{fig:timebounds} for $N=256$ and in Fig.~\ref{fig:adv_freq} for various $N$, the speed of this algorithm is much better compared with Gurobi's. Moreover, 
+$t_0$ for MQLib also scales as a low-degree polynomial, and for 1,000 nodes MQLib can return a solution in $2$ milliseconds.
+The zero-time performance shows the same constant behavior, and the value of the constant is slightly higher than that of Gurobi, as shown in Fig.~\ref{fig:t0_cutf}.
+
+While for Gurobi and MQLib we find the time scaling heuristically, the FLIP algorithm is known to have linear time scaling. With our implementation in Python, it shows speed comparable to that of MQLib and solution quality comparable to QAOA $p=6$.
+We use this algorithm as a demonstration that a linear-time algorithm can give constant performance for large $N$, averaged over multiple graph instances.
+
+
+
+
+\section{Acknowledgements}
+
+This research was developed with funding from the Defense Advanced Research Projects Agency (DARPA). The views, opinions and/or findings expressed are those of the author and should not be interpreted as representing the official views or policies of the Department of Defense or the U.S. Government.
+ Y.A.’s and D.L.'s work at Argonne National Laboratory was supported by the U.S. Department of Energy, Office of Science, under contract DE-AC02-06CH11357.
+The work at UWM was also supported by the U.S. Department of Energy, Office of Science, National Quantum Information Science Research Centers.
+\\
+
+\section{Data availability}
+The code, figures and datasets generated during the current study are available in a public repository
+\url{https://github.com/danlkv/quantum-classical-time-maxcut}.
+See the \texttt{README.md} file for the details on the contents of the repository.
+
+
+\section{Author contribution}
+
+D. L. and J. W. performed and analyzed the experiments and wrote the main text.
+C. P. generated the FLIP data. M. S., T. N, and Y. A.
+edited the paper.
+
+\section{Competing interests}
+
+T. N. and M. S. are equity holders of and employed by ColdQuanta, a quantum technology company.
+J.W. is a small equity holder of and employed by QuEra Computing.
+

@@ -1,0 +1,195 @@
+\documentclass[prb,reprint,nofootinbib,longbibliography,superscriptaddress]{revtex4-1}
+\bibpunct{[}{]}{;}{n}{}{}
+
+
+\pdfoutput=1
+\pdfinclusioncopyfonts=1
+
+\usepackage[caption=false]{subfig}
+
+\usepackage{graphicx}
+\usepackage{comment}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{bbm}
+\usepackage{braket}
+\usepackage{verbatim}
+\usepackage[colorlinks, urlcolor=blue]{hyperref}
+\usepackage{ulem}
+\usepackage{color, colortbl}
+\usepackage{multirow}
+\definecolor{LightCyan}{rgb}{1,0.5,0.5}
+\hypersetup{
+  colorlinks   = true, 
+  urlcolor     = blue, 
+  linkcolor    = blue, 
+  citecolor   = blue 
+}
+
+\newenvironment{Figure}
+{\par\medskip\noindent\minipage{\linewidth}}
+{\endminipage\par\medskip}
+
+\usepackage{cancel}
+\usepackage{color}
+\usepackage{tikz}
+
+
+
+\newcommand*{\red}{\textcolor{red}}
+\newcommand*{\blue}{\textcolor{blue}}
+\newcommand*{\green}{\textcolor{green}}
+\newcommand*{\pink}{\textcolor{pink}}
+\newcommand*{\cyan}{\textcolor{cyan}}
+\newcommand{\Epsilon}{\mathcal E}
+\newcommand{\PP}{\mathcal P}
+\newcommand{\QQ}{\mathcal Q}
+\newcommand{\maxcut}{\texttt{MAXCUT} }
+
+\newcommand{\be}{\begin{equation}}
+\newcommand{\ee}{\end{equation}}
+
+\newcommand{\Caption}[1]{\captionof{figure}{\textit{#1}}}
+\newcommand{\CITE}[0]{\jw{\textbf{[CITE]}}}
+
+\newcommand{\emphbox}[1]{\begin{center}\begin{Large}
+			\fbox{\parbox{\linewidth}{\centering{#1}}}
+		\end{Large}\end{center}}
+
+\newcommand{\jw}[1]{{\textbf{\red{#1}}}}
+\newcommand{\cp}[1]{{\textbf{\green{#1}}}}
+\newcommand{\dl}[1]{{\cyan{#1}}}
+\newcommand{\tn}[1]{{\textbf{\blue{#1}}}}
+% dl comment
+\newcommand{\dlcomm}[1]{\textbf{\dl{[{#1} - DL]}}}
+% dl removed
+\newcommand{\dlrm}[1]{\dl{\sout{#1}}}
+
+%opening
+
+\newcommand{\gammabeta}{{\gamma, \beta}}
+% undefined term used in text
+\newcommand{\undef}[1]{\red{#1 (undefined)}}
+% to easily replace when the work is published
+\newcommand{\add}[1]{{\color{red}#1}}
+\newcommand{\del}[1]{{\color{red}\sout{#1}}}
+
+\newcommand{\ColorComment}[3]{%
+	{\colorbox{#1}{\color{white}   \textsf{\textbf{#2}}} \textcolor{#1}{#3}}}
+%  Colorful box, initials, phrase 
+\newcommand{\nyacite}[1]{[#1]}
+% not yet a cite
+	
+\definecolor{mscolor}{rgb}{0,0.5,0.5}\newcommand{\ms}[1]{\ColorComment{mscolor}{ms}{#1}}
+
+
+\begin{document}
+
+	%\title{One step [further] to the quantum advantage on MaxCut using QAOA}
+	\title{Sampling Frequency Thresholds for Quantum Advantage of Quantum Approximate Optimization Algorithm}
+	%Keywords:
+	%Analysis, compare, frequency, Speed thresholds, single-shot, QAOA,
+
+\author{Danylo Lykov}
+\email{dlykov@anl.gov}
+\affiliation
+{Computational Science Division, Argonne National Laboratory, 9700 S. Cass Ave., Lemont, IL 60439, USA}
+\affiliation{Department of Computer Science, The University of Chicago, Chicago, IL 60637, USA}
+
+\author{Jonathan Wurtz}
+\affiliation{Department of Physics and Astronomy, Tufts University, Medford, MA 02155, USA}
+\affiliation{QuEra Computing Inc., Boston, MA 02135, USA}
+
+\author{Cody Poole}
+\email{cpoole2@wisc.edu}
+\affiliation
+{Department of Physics, University of Wisconsin - Madison, Madison, WI 53706, USA}
+
+\author{Mark Saffman}
+\email{msaffman@wisc.edu}
+
+\affiliation
+{Department of Physics, University of Wisconsin - Madison, Madison, WI 53706, USA}
+\affiliation{ColdQuanta, Inc., 612 W. Main St., Madison, WI 53703, USA}
+
+\author{Tom Noel}
+\email{tom.noel@coldquanta.com}
+\affiliation
+{ColdQuanta, Inc., 3030 Sterling Circle, Boulder, CO 80301, USA}
+
+
+\author{Yuri Alexeev}
+\email{yuri@anl.gov}
+\affiliation
+{Computational Science Division, Argonne National Laboratory, 9700 S. Cass Ave., Lemont, IL 60439, USA}
+
+%	\date{Started 6/3/21}
+
+%    Some notation and formatting things:\\
+%    Single shot fixed angle QAOA (and not any permutations)\\
+%    MaxCut (not maxcut, or MAXCUT, or \texttt{MAXCUT} or anything else.)\\
+	
+	\begin{abstract}
+In this work, we compare the performance of the Quantum Approximate Optimization Algorithm (QAOA) with  state-of-the-art classical solvers such as Gurobi and MQLib to solve the combinatorial optimization problem MaxCut on 3-regular graphs. The goal is to identify under which conditions QAOA can achieve “quantum advantage” over classical algorithms,  in terms of both solution quality and time to solution.
+One might be able to achieve quantum advantage on hundreds of qubits and moderate depth $p$ by sampling the QAOA state at a frequency of order 10 kHz.
+We observe, however, that classical heuristic solvers are capable of producing high-quality approximate solutions in \textit{linear} time complexity.
+In order to match this quality for \textit{large} graph sizes $N$, a quantum device must support depth $p>11$.
+Otherwise, we demonstrate that 
+the number of required samples grows exponentially with $N$, hindering the scalability of QAOA with $p\leq11$.
+These results put challenging bounds on achieving quantum advantage for QAOA MaxCut on 3-regular graphs.
+Other problems, such as different graphs, weighted MaxCut, maximum independent set, and 3-SAT, may be better suited for achieving quantum advantage on near-term quantum devices.
+
+	\end{abstract}
+	
+	
+	\maketitle
+	
+
+
+
+\section{Introduction}
+
+
+Quantum computing promises enormous computational powers that can far outperform any classical computational capabilities~\cite{alexeev2021quantum}. In particular, certain problems can be solved much faster compared with classical computing, as demonstrated experimentally by Google for the task of sampling from a quantum state~\cite{arute2019quantum}.
+Thus,  an important milestone \cite{arute2019quantum} in quantum technology, so-called ``quantum supremacy", was achieved as defined by Preskill~\cite{preskill2012quantum}. 
+
+The next milestone, ``quantum advantage", where quantum devices  solve \textit{useful} problems faster than classical hardware, is more elusive and has arguably not  yet been demonstrated. However, a recent study suggests a possibility of achieving a quantum advantage in runtime over specialized state-of-the-art heuristic algorithms to solve the Maximum Independent Set problem using Rydberg atom arrays~\cite{ebadi2022}.
+Common classical solutions to several potential applications for near-future quantum computing are heuristic and do not have performance bounds. Thus,  proving the advantage of quantum computers is far more challenging~\cite{Guerreschi2019,Zhou2020,Serret2020}.
+Providing an estimate of how quantum advantage over these classical solvers can be achieved is important for the community and is the subject of this paper.
+
+\begin{figure}[h!t] % Lets try to get Fig. 1 on the first page...
+
+    \centering
+    \includegraphics[width=\linewidth]{figures/figure1}
+    \caption{Locus of quantum advantage over classical algorithms. A particular classical algorithm may return some solution to some ensemble of problems in time $T_C$ (horizontal axis) with some quality $C_C$ (vertical axis). Similarly, a quantum algorithm may return a different solution sampled in time $T_Q$, which may be faster (right) or slower (left) than classical, with a better (top) or worse (bottom) quality than classical. If QAOA returns better solutions faster than the classical, then there is clear advantage (top right), and conversely  no advantage for worse solutions slower than the classical (bottom left).}
+    \label{fig:comparison_map}
+\end{figure}
+
+Most of the useful quantum algorithms require large fault-tolerant quantum computers, which remain far in the future. In the near future, however, we can expect to have noisy intermediate-scale quantum (NISQ) devices~\cite{Preskill2018}. 
+In this context variational quantum algorithms (VQAs) show the most promise~\cite{VQA_overview} for the NISQ era, such as the variational quantum eigensolver (VQE)~\cite{peruzzo2014variational} and the Quantum Approximate Optimization Algorithm~(QAOA)~\cite{farhi2014quantum}.
+Researchers have shown remarkable interest in QAOA because it can be used to obtain approximate (i.e., valid but not optimal) solutions to a wide range of useful combinatorial optimization problems~\cite{ebadi2022, farhi2020quantum, Chatterjee2021}.
+
+
+In opposition, powerful classical approximate and exact solvers have been developed to find good approximate solutions to combinatorial optimization problems. For example, a recent work by Guerreschi and Matsuura~\cite{Guerreschi2019} compares the time to solution of QAOA vs.~the classical combinatorial optimization suite AKMAXSAT. The classical optimizer takes exponential time with a small prefactor, which leads to the conclusion that QAOA needs hundreds of qubits to be faster than classical. This analysis requires the classical optimizer to find an exact solution, while QAOA  yields only approximate solutions. However, modern classical heuristic algorithms are able to return an approximate solution on demand.
+Allowing for worse-quality solutions makes these solvers extremely fast (on the order of milliseconds), suggesting that QAOA must also be fast to remain competitive.
+A valid comparison should consider both solution quality and time.
+
+
+In this way, the locus of quantum advantage has two axes, as shown in Fig.~\ref{fig:comparison_map}: to reach advantage, a quantum algorithm must be both faster and return better solutions than a competing classical algorithm (green, top right). If the quantum version is slower and returns worse solutions (red, bottom left) there is clearly no advantage. However,  two more regions are shown in the figure. If the QAOA returns better solutions more slowly than a classical algorithm (yellow, top left), then we can increase the running time for the classical version. It can ``try again" and improve its solution with more time. This is a crucial mode  to consider when assessing advantage: heuristic algorithms may always outperform quantum algorithms if quantum time to solution is slow.
+Alternatively, QAOA may return worse solutions faster (yellow, bottom right), which may be useful for time-sensitive applications.
+In the same way, we may stop the classical algorithm earlier, and the classical solutions will become worse.
+
+One must keep in mind that the reason for using a quantum algorithm is the scaling of its time to solution with the problem size $N$. 
+Therefore, a strong quantum advantage claim should demonstrate the superior performance of a quantum algorithm in the large-$N$ limit.
+
+This paper focuses on the MaxCut combinatorial optimization problem on 3-regular graphs for various problem size $N$. MaxCut is a popular benchmarking problem for QAOA because of its simplicity and straightforward implementation.
+We propose a fast ``fixed-angle" approach to running QAOA that speeds up QAOA while preserving solution quality compared with slower conventional approaches.
+We evaluate the expectation value of noiseless QAOA solution quality using tensor network simulations on classical hardware. We then find the time required for classical solvers to match this expected QAOA solution quality.
+Surprisingly, we observe that even for the smallest possible time, the classical solution quality is above our QAOA solution quality for $p=11$, our largest $p$ with known performance.
+Therefore, we compensate for this difference in quality by using multishot QAOA and find the number of samples $K$ required to match the classical solution quality.
+$K$ allows us to characterize quantum device parameters, such as sampling frequency, required for the quantum algorithm to match the classical solution quality.
+
+
+
+

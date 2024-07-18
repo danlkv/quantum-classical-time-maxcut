@@ -1,0 +1,128 @@
+\section{Results and discussion}
+
+This section will outline the results and comparison between classical optimizers and QAOA. This has two halves: Sec.~\ref{sec:QAOA_results} outlines the results of the quantum algorithm, and Sec.~\ref{sec:classical_results} outlines the results of the classical competition.
+
+\label{sec:results}
+
+
+
+
+\subsection{Expected QAOA solution quality}\label{sec:QAOA_results}
+
+The first algorithm is the quantum approximate optimization algorithm (QAOA), which uses a particular ansatz to generate approximate solutions through measurement.  We evaluate QAOA for two specific modes. The first is single shot fixed angle QAOA, where a single solution is generated. This has the the benefit of being very fast. The second generalization is multi-shot fixed angle QAOA, where many solutions are generated, and the best is kept. This has the benefit that the solution may be improved with increased run time.
+
+In Section \ref{sec:QAOAperformance} we find that one can put limits on the QAOA MaxCut performance even when the exact structure of a 3-regular graph is unknown using fixed angles. We have shown that for large $N$ the average cut fraction for QAOA solutions on 3-regular graphs converges to a fixed value $f_{\text {tree}}$. If memory limitations permit, we evaluate these values numerically using tensor network simulations. This gives us the average QAOA performance for any large $N$ and $p\leq11$.  To further strengthen the study of QAOA performance estimations, we verify that for the small $N$, the performance is close to the same value $f_{\text{tree}}$. We are able to numerically verify that for $p\leq 4$ and small $N$ the typical cut fraction is close to $f_{\text {tree}}$, as shown on Fig.~\ref{fig:bounds_p1}.
+
+Combining the large-$N$ theoretical analysis and small-$N$ heuristic evidence, we are able to predict the average performance of QAOA on 3-regular graphs for $p\leq11$. We note that today's hardware can run QAOA up to $p\leq4$ \cite{ebadi2022} and that for larger depths the hardware noise prevents achieving better QAOA performance. Therefore, the $p\leq11$ constraint is not an important limitation for our analysis.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/figure6}
+    \caption{
+    Time required for a single-shot QAOA to match classical MaxCut algorithms.
+    The blue line shows time for comparing with the Gurobi solver and using $p=11$;  the yellow line shows comparison with the FLIP algorithm and $p=6$.
+    Each quantum device that runs MaxCut QAOA can be represented on this plot as a point, where the x-axis is the number of qubits and the y-axis is the time to solution. 
+    For any QAOA depth $p$, the quantum device should return at least one bitstring faster than the Y-value on this plot.
+    }
+    \label{fig:adv_freq}
+\end{figure}
+
+\subsection{Classical solution quality and time to solution}\label{sec:classical_results}
+
+The second ensemble of algorithms are classical heuristic or ``any-time" algorithms. These algorithms have the property that they can be stopped mid-optimization and provide the best solution found so far. After a short time spent loading the instance, they find an initial ``zero-time" guess. Then, they explore the solution space and find incramentally better solutions until stopping with the best solution after a generally exponential amount of time. We experimentally evaluate the performance of the classical solvers Gurobi, MQLib using BURER2002 heuristic, and FLIP in Sec.~\ref{sec:meth_classical}. We observe that the zero-time performance, which is the quality of the fastest classical solution, is above the expected quality of QAOA $p=11$, as shown in Fig.~\ref{fig:t0_cutf}. The zero-time to first solution scales linearly with size, as shown in Fig.~\ref{fig:adv_freq}. To compete with classical solvers, QAOA has to return better solutions faster.
+
+\begin{figure}
+    \includegraphics[width=\linewidth]{figures/figure5}
+    \caption{
+    Zero-time performance for graphs of different size $N$.
+    The Y-value is the cut fraction obtained by running corresponding algorithms for minimum possible time. This corresponds to the Y-value of the star marker in Fig.~\ref{fig:timebounds}.
+    Dashed lines show the expected QAOA performance for $p=11$ (blue) and $p=6$ (yellow). QAOA can outperform the FLIP algorithm at depth $p>6$, while for Gurobi it needs $p>11$.
+    Note that in order to claim advantage, QAOA has to provide the zero-time solutions in faster time than FLIP or Gurobi does. These times are shown on Fig.~\ref{fig:adv_freq}.
+    %Fix line formatting. \jw{Expand.}
+    }
+    \label{fig:t0_cutf}
+\end{figure}
+\subsection{Multi-shot QAOA}
+
+To improve the performance of QAOA, one can sample many bitstrings and then take the best one. This approach will  work only  if the  dispersion of the cut fraction distribution is large, however. For example, if the  dispersion is zero, measuring the ansatz state would return only bitstrings with a fixed cut value. By analyzing the correlations between the qubits in Section \ref{sec:QAOAperformance}, we show that the distribution of the cut fraction is a Gaussian with the  standard deviation on the order of $1/\sqrt N$. The expectation value of \emph{maximum} of $K$ samples is proportional to the  standard deviation, as shown in Equation \ref{eq:multi-shot}. This equation determines the performance of multishot QAOA. In the large $N$ limit the  standard deviation is small, and one might need to measure more samples in order to match the classical performance.
+
+
+
+If we have the mean performance of a classical algorithm, we can estimate the number of samples $K$ required for QAOA to match the classical performance. We denote the difference between classical and quantum expected cut fraction as $\Delta_p(t)$, which is a function of the running time of the classical algorithm. Moreover, it also depends on $p$, since $p$ determines QAOA expected performance. If $\Delta_p(t) < 0$, the performance of QAOA is better, and we  need only a $K=1$ sample. In order to provide an advantage, QAOA would have to measure this sample faster than the classical algorithm, as per Fig.~\ref{fig:comparison_map}. On the other hand, if $\Delta_p(t) > 0$, the classical expectation value is larger than the quantum one, and we have to perform multisample QAOA. We can find $K$ by inverting Equation \ref{eq:multi-shot}. In order to match the classical algorithm, a quantum device should be able to run these $K$ samples in no longer than $t$. We can therefore get the threshold sampling frequency.
+\begin{equation}
+   \nu_p(t) = \frac{K}{t} = \frac{1}{t}\exp \left({\frac{N}{2\gamma_p^2}\Delta_p(t) ^2} \right)
+\end{equation}
+The scaling of $\Delta_p(t)$ with $t$ is essential here since it determines at which point $t$ we will have the smallest sampling frequency for advantage. We find that for BURER2002, the value of $\Delta(t)$ is the lowest for the smallest possible $t=t_0$, which is when a classical algorithm can produce its first solution. To provide the lower bound for QAOA we consider $t_0$ as the most favourable point, since classical solution improves much faster with time than a multi-shot QAOA solution. This point is discussed in more detail in Appendix~\ref{sec:opt_time}.
+
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/figure4.pdf}
+    \caption{
+    Evolution of cut fraction value in the process of running the classical algorithms solving 3-regular MaxCut with $N$=256. The shaded area shows 90-10 percentiles interval, 
+    and the solid line shows the mean cut fraction over 100 graphs.
+    The dashed lines show the expectation value of single-shot QAOA for $p=6, 11$, and
+    the dash-dotted lines show the expected performance for multishot QAOA given a sampling rate of 5 kHz.
+    Note that for this $N=256$ the multi-shot QAOA with $p=6$ can compete with Gurobi
+    at 50 milliseconds. However, the slope of the multi-shot line will decrease for larger $N$, reducing the utility of the multi-shot QAOA. 
+    }
+    \label{fig:timebounds}
+\end{figure}
+
+Time $t_0$ is shown on Fig.~\ref{fig:adv_freq} for different classical algorithms. We note that in the figure
+%Figure~\ref{fig:adv_freq}
+the time scales polynomially with the number of nodes $N$. Figure~\ref{fig:t0_cutf} shows the mean cut fraction for the same classical algorithms, as well as the expectation value of QAOA at $p=6, 11$. These two figures show that a simple linear-runtime FLIP algorithm is fast and gives a performance on par with $p=6$ QAOA. In this case $\Delta_6(t_0) < 0$, and we  need to sample only a single bitstring. To obtain the $p=6$ sampling frequency for advantage over the FLIP algorithm, one has to invert the time from Fig.~\ref{fig:adv_freq}. If the quantum device is not capable of running $p=6$ with little noise, the quantum computer will have to do multishot QAOA. Note that any classical prepossessing for QAOA will be at least linear in time since one must read the input and produce a quantum circuit. Therefore, for small $p<6$ QAOA will not give significant advantage: for any fast QAOA device one needs a fast classical computer; one might just run the classical FLIP algorithm on it.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/figure7.pdf}
+    \caption{
+    Sampling frequency required to achieve MaxCut advantage using QAOA $p=11$.
+    The shaded area around the solid lines corresponds to 90-10 percentiles over 100 seeds for Gurobi and 20 seeds for BURER2002.
+    The background shading represents comparison of a quantum computer with BURER2002 solver corresponding to modes in Fig.~\ref{fig:comparison_map}.
+    Each quantum device can be represented on this plot as a point, where the x-axis is the number of qubits, and the y-axis is the time to solution. 
+    Depending on the region where the point lands, there are different results of comparisons.
+    QAOA becomes inefficient for large $N$, when sampling frequency starts to grow exponentially with $N$.
+    }
+    \label{fig:adv_rate}
+\end{figure}
+
+The Gurobi solver is able to achieve substantially better performance, and it slightly outperforms $p=11$ QAOA. Moreover, the BURER2002 algorithm demonstrates even better solution quality than does  Gurobi while being significantly faster. For both Gurobi and BURER2002, the $\Delta_{11}(t_0) > 0$, and we need to either perform multishot QAOA or increase $p$. Figure~\ref{fig:adv_rate} shows the advantage sampling frequency $\nu_{11}(t_0)$ for the Gurobi and BURER2002 algorithms; note that the vertical axis is doubly exponential.
+
+The sampling frequency is a result of two factors that work in opposite directions. On the one hand, the time to solution for a classical algorithm grows with $N$, and hence $\nu$ drops. On the other hand, the  standard deviation of distribution vanishes as $1/\sqrt{N}$, and therefore the number of samples $K$ grows exponentially. There is an optimal size $N$ for which the sampling frequency is minimal.
+This analysis shows that there is a possibility for advantage with multi-shot QAOA for moderate sizes of $N=100..10\,000$, for which a sampling frequency of $\approx10$kHz is required.
+These frequencies are very sensitive to the difference in solution quality, and for $p\geq12$ a different presentation is needed, if one quantum sample is expected to give better than classical solution quality. This is discussed in more detail in Appendix \ref{sec:opt_time}.
+
+For large $N$, as expected, we see a rapid growth of sampling frequency, which indicates that QAOA does not scale for larger graph sizes, unless we go to higher depth $p>11$. The color shading shows correspondence with Fig.~\ref{fig:comparison_map}. If the quantum device is able to run $p \geq 11$ and its sampling frequency and the number of qubits $N$ corresponds to the green area, we have a quantum advantage. Otherwise, the quantum device belongs to the red area, and there is no advantage.
+
+It is important to note the effect of classical parallelization on our results. Despite giving more resources to the classical side, parallel computing is unlikely to help it. To understand this, one has to think on how parallelization would change the performance profile as shown on Figure~\ref{fig:timebounds}. The time to the first classical solution is usually bound from below by preparation tasks such as reading the graph, which are inherently serial. Thus, parallelization will not reduce $t_0$ and is in fact likely to increase it due to communication overhead. Instead, it will increase the slope of the solution quality curve, helping classical algorithms to compete in the ``convergence" regime. 
+
+
+
+
+
+
+
+
+\subsection{Discussion}
+
+As shown in Fig.~\ref{fig:comparison_map}, to achieve quantum advantage, QAOA must return better solutions faster than the competing classical algorithm. This puts stringent requirements on the speed of QAOA, which previously may have gone unevaluated. If QAOA returns a solution more slowly, the competing classical algorithm may ``try again" to improve its solution, as is the case for anytime optimizers such as the Gurobi solver. The simplest way to improve the speed of QAOA is to reduce the number of queries to the quantum device, which we propose in our fixed-angle QAOA approach. This implementation forgoes the variational optimization step and uses solution concentration, reducing the number of samples to order 1 instead of order 100,000. Even with these improvements, however, the space of quantum advantage may be difficult to access.
+
+Our work demonstrates that with a quantum computer of $\approx 100$ qubits, QAOA can be competitive with classical MaxCut solvers if the time to solution is shorter than 100~$\mu$s and the depth of the QAOA circuit is $p\geq6$.
+However, the required speed of the quantum device grows with $N$ exponentially. Even if an experiment shows advantage for intermediate $N$ and $p\leq11$, the advantage will be lost on larger problems regardless of the quantum sampling rate. 
+Thus, in  order  to be fully competitive with classical MaxCut solvers, quantum computers have to increase solution quality, for instance by using $p\geq12$.
+Notably, $p=12$ is required but not sufficient for achieving advantage: the end goal is obtaining a cut fraction better than $\geq 0.885$ for large $N$, including overcoming other challenges of quantum devices such as noise.
+
+These results lead us to  conclude that for 3-regular graphs (perhaps all regular graphs),  achieving quantum advantage on NISQ devices may be difficult. For example, the fidelity requirements to achieve quantum advantage are well above the characteristics of NISQ devices.
+
+
+
+We note that  improved versions of QAOA exist, where the initial state is replaced with a preoptimized state \cite{warmstartQAOA} or the mixer operator is adapted to improve performance \cite{zhu2020adaptive, Govia2021}. One also can use information from classical solvers to generate a better ansatz state \cite{wurtz2021classically}. These algorithms have further potential to compete against classical MaxCut algorithms.
+Also, more general problems, such as weighted MaxCut, maximum independent set, and 3-SAT, may be necessary in order to find problem instances suitable for achieving quantum advantage.
+
+When comparing with classical algorithms, one must record the complete time to solution from the  circuit configuration to the measured state. This parameter may be used in the extension of the notion of ``quantum volume," which is customarily used for quantum device characterization.
+Our work shows that QAOA MaxCut does not scale with graph size for at least up to $p\leq11$, thus putting quantum advantage for this problem away from the NISQ era.
+
+
+
